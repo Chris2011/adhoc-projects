@@ -76,7 +76,6 @@ public class AdhocProject implements Project,
         ProjectActionPerformer, ActionProvider, LogicalViewProvider /*, CodeStylePreferences.Provider */ {
 
     private FileObject dir;
-    private final ProjectState state;
     private final AuxPropertiesImpl aux = new AuxPropertiesImpl();
     private final CopyMoveRenameDelete ops = new CopyMoveRenameDelete();
     private final EncQueryImpl encodingQuery;
@@ -89,7 +88,6 @@ public class AdhocProject implements Project,
     public AdhocProject(FileObject dir, ProjectState state) throws IOException {
         this.encodingQuery = new EncQueryImpl();
         this.dir = dir;
-        this.state = state;
     }
 
     @Override
@@ -217,9 +215,7 @@ public class AdhocProject implements Project,
                         } finally {
                             lock.releaseLock();
                         }
-                    } catch (IOException ex) {
-                        Exceptions.printStackTrace(ex);
-                    } catch (BackingStoreException ex) {
+                    } catch (IOException | BackingStoreException ex) {
                         Exceptions.printStackTrace(ex);
                     }
                 }
@@ -280,12 +276,6 @@ public class AdhocProject implements Project,
         return nodeName;
     }
 
-    private String prefsNodeNameAfterRename(String fn) {
-        String s = ";;" + getProjectDirectory().getParent().getPath().replace('/', '_').replace('\\', '_');
-        s += '/' + fn.replace('/', '_').replace('\\', '_');
-        return s;
-    }
-
     private void copyPreferences(Preferences orig, Preferences into) throws BackingStoreException {
         for (String s : orig.keys()) {
             into.put(s, orig.get(s, null));
@@ -307,57 +297,6 @@ public class AdhocProject implements Project,
         return null;
     }
 
-    void clearFavorites() {
-        try {
-            Preferences forProject = preferences(false);
-            if (forProject != null) {
-                forProject.clear();
-                forProject.removeNode();
-            }
-        } catch (BackingStoreException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-    }
-
-    void saveFavorites(Iterable<Favorite> items) {
-        try {
-            Preferences forProject = preferences(true);
-            for (Favorite fav : items) {
-                Preferences forFile = forProject.node(fav.path().
-                        replace('/', '_').replace('\\', '_'));
-                forFile.put("name", fav.path());
-                forFile.putInt("value", fav.count);
-            }
-        } catch (BackingStoreException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-    }
-
-    public List<Favorite> favorites() {
-        List<Favorite> favorites = new ArrayList<>();
-        try {
-            Preferences forProject = preferences(false);
-            if (forProject != null) {
-                String[] s = forProject.childrenNames();
-                for (String ch : s) {
-                    Preferences forFile = forProject.node(ch);
-                    if (forFile != null) {
-                        int val = forFile.getInt("value", 0);
-                        String name = forFile.get("name", null);
-                        if (val > 0 && name != null) {
-                            Favorite fav = new Favorite(val, name);
-                            favorites.add(fav);
-                        }
-                    }
-                }
-            }
-        } catch (BackingStoreException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-        Collections.sort(favorites);
-        return favorites;
-    }
-
 //    @Override
     public Preferences forFile(FileObject fo, String string) {
         try {
@@ -376,7 +315,7 @@ public class AdhocProject implements Project,
 
     @Override
     public Project getOwner(URI uri) {
-        FileObject fo = FileUtil.toFileObject(FileUtil.normalizeFile(new File(uri)));
+        FileObject fo = FileUtil.toFileObject(FileUtil.normalizeFile(Utilities.toFile(uri)));
         return fo == null ? null : getOwner(fo);
     }
 
@@ -394,50 +333,6 @@ public class AdhocProject implements Project,
             check = check.getParent();
         } while (check != null);
         return null;
-    }
-
-    public int getMaxFavorites() {
-        try {
-            return preferences(true).getInt("maxFavorites", 20);
-        } catch (BackingStoreException ex) {
-            Exceptions.printStackTrace(ex);
-            return 20;
-        }
-    }
-
-    public int getFavoriteUsageCount() {
-        try {
-            return preferences(true).getInt("favoriteUsageCount", 1);
-        } catch (BackingStoreException ex) {
-            Exceptions.printStackTrace(ex);
-            return 1;
-        }
-    }
-
-    public void setFavoriteUsageCount(int val) {
-        try {
-            int old = getFavoriteUsageCount();
-            if (old != val) {
-                preferences(true).putInt("favoriteUsageCount", val);
-                supp.firePropertyChange("favoriteUsageCount", old, val);
-                refreshFavorites();
-            }
-        } catch (BackingStoreException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-    }
-
-    public void setMaxFavorites(int val) {
-        try {
-            int old = getMaxFavorites();
-            if (old != val) {
-                preferences(true).putInt("maxFavorites", val);
-                refreshFavorites();
-                supp.firePropertyChange("maxFavorites", old, val);
-            }
-        } catch (BackingStoreException ex) {
-            Exceptions.printStackTrace(ex);
-        }
     }
 
     public void setDisplayName(String name) {
@@ -587,15 +482,6 @@ public class AdhocProject implements Project,
             }
         }
         return view == null ? Node.EMPTY : view;
-    }
-
-    void refreshFavorites() {
-        AdhocProjectNode view = logicalView == null ? null
-                : logicalView.get();
-
-        if (view != null) {
-            view.refreshFavorites();
-        }
     }
 
     @Override

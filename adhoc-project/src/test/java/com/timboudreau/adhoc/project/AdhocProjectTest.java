@@ -149,19 +149,6 @@ public class AdhocProjectTest {
     }
 
     @Test
-    public void testFavorites() {
-        java.util.List<Favorite> favs = new ArrayList<>();
-        char[] chars = new char[]{'d', 'c', 'b', 'a'};
-        int ix = 1;
-        for (char c : chars) {
-            favs.add(new Favorite(ix *= 10, "foo/" + c));
-        }
-        project.saveFavorites(favs);
-        java.util.List<Favorite> nue = project.favorites();
-        assertEquals(new HashSet<>(favs), new HashSet<>(nue));
-    }
-
-    @Test
     public void testConfiguration() {
         AuxiliaryProperties p = project.getLookup().lookup(AuxiliaryProperties.class);
         assertNotNull(p);
@@ -206,10 +193,10 @@ public class AdhocProjectTest {
     
     @Test
     public void testMinMax() {
-        project.setMaxFavorites(52);
-        assertEquals(52, project.getMaxFavorites());
-        project.setFavoriteUsageCount(14);
-        assertEquals(14, project.getFavoriteUsageCount());
+//        project.setMaxFavorites(52);
+//        assertEquals(52, project.getMaxFavorites());
+//        project.setFavoriteUsageCount(14);
+//        assertEquals(14, project.getFavoriteUsageCount());
         String old = project.getLookup().lookup(ProjectInformation.class).getDisplayName();
         assertNotSame("figpucker".intern(), old.intern());
         project.setDisplayName("figpucker");
