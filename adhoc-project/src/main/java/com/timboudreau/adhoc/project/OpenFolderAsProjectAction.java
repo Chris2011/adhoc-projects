@@ -19,6 +19,7 @@
 package com.timboudreau.adhoc.project;
 
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.io.IOException;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -28,7 +29,9 @@ import org.netbeans.api.project.ui.OpenProjects;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
+import org.openide.filesystems.FileChooserBuilder;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
 import org.openide.util.ContextAwareAction;
 import org.openide.util.Exceptions;
@@ -42,48 +45,45 @@ import org.openide.util.Utilities;
  *
  * @author Tim Boudreau
  */
-@NbBundle.Messages(value = {"ACT_Open=Open As Project"})
-public class AdhocProjectToolsAction extends AbstractAction implements ContextAwareAction {
-
-    @ActionID(id = "com.timboudreau.adhoc.project.AdhocProjectToolsAction", category = "Window")
-    @ActionRegistration(displayName = "#ACT_Open", lazy = false)
-    @ActionReference(position = 300, path = "UI/ToolActions/Files")
-    public static ContextAwareAction instance() {
-        return new AdhocProjectToolsAction();
-    }
+@NbBundle.Messages(value = {"ACT_Open=Open Folder as Project"})
+@ActionID(id = "com.timboudreau.adhoc.project.AdhocProjectToolsAction", category = "Window")
+@ActionRegistration(displayName = "#ACT_Open", lazy = false)
+@ActionReference(position = 300, path = "Menu/File")
+public class OpenFolderAsProjectAction extends AbstractAction {
     private final Lookup lkp;
 
-    AdhocProjectToolsAction() {
+    OpenFolderAsProjectAction() {
         this(Utilities.actionsGlobalContext());
     }
 
-    AdhocProjectToolsAction(Lookup lkp) {
+    OpenFolderAsProjectAction(Lookup lkp) {
         this.lkp = lkp;
-        putValue(NAME, NbBundle.getMessage(AdhocProjectToolsAction.class, "ACT_Open"));
+        putValue(NAME, NbBundle.getMessage(OpenFolderAsProjectAction.class, "ACT_Open"));
     }
 
-    @Override
-    public Action createContextAwareInstance(Lookup actionContext) {
-        return new AdhocProjectToolsAction(actionContext);
-    }
-
-    @Override
-    public boolean isEnabled() {
-        FileObject fo = getFileObject();
-        return fo != null && !fo.isVirtual() && fo.isFolder();
-    }
-
-    private FileObject getFileObject() {
-        DataObject ob = lkp.lookup(DataObject.class);
-        if (ob != null) {
-            return ob.getPrimaryFile();
-        }
-        return null;
-    }
-
+//    @Override
+//    public boolean isEnabled() {
+//        FileObject fo = getFileObject();
+//        return fo != null && !fo.isVirtual() && fo.isFolder();
+//    }
+//
+//    private FileObject getFileObject() {
+//        DataObject ob = lkp.lookup(DataObject.class);
+//        if (ob != null) {
+//            return ob.getPrimaryFile();
+//        }
+//        return null;
+//    }
     @Override
     public void actionPerformed(ActionEvent ae) {
-        final FileObject fo = getFileObject();
+//        final FileObject fo = getFileObject();
+        File f = new FileChooserBuilder(OpenFolderAsProjectAction.class)
+                .setDirectoriesOnly(true)
+                .setTitle("Open Folder as Project")
+                .showOpenDialog();
+
+        final FileObject fo = FileUtil.toFileObject(f);
+
         if (fo != null) {
             RequestProcessor.getDefault().post(new Runnable() {
                 boolean reallyOpen = false;
