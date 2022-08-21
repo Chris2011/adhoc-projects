@@ -93,7 +93,7 @@ public class AdhocProjectNode extends FilterNode implements LogicalViewProvider,
 
     @Override
     public Image getIcon(int type) {
-        return ImageUtilities.loadImage("com/timboudreau/adhoc/project/adhoc.png", false);
+        return ImageUtilities.loadImage("org/netbeans/modules/openfile/folder.gif", false);
     }
 
     @Override

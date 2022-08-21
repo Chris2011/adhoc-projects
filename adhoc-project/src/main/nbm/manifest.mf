@@ -1,2 +1,3 @@
 Manifest-Version: 1.0
+OpenIDE-Module-Layer: com/timboudreau/adhoc/project/layer.xml
 OpenIDE-Module-Localizing-Bundle: com/timboudreau/adhoc/project/Bundle.properties
