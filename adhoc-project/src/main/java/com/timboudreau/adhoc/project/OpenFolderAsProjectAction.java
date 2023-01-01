@@ -22,7 +22,6 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
 import javax.swing.AbstractAction;
-import javax.swing.Action;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
 import org.netbeans.api.project.ui.OpenProjects;
@@ -32,8 +31,6 @@ import org.openide.awt.ActionRegistration;
 import org.openide.filesystems.FileChooserBuilder;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
-import org.openide.loaders.DataObject;
-import org.openide.util.ContextAwareAction;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
@@ -50,33 +47,16 @@ import org.openide.util.Utilities;
 @ActionRegistration(displayName = "#ACT_Open", lazy = false)
 @ActionReference(position = 300, path = "Menu/File")
 public class OpenFolderAsProjectAction extends AbstractAction {
-    private final Lookup lkp;
-
-    OpenFolderAsProjectAction() {
+    public OpenFolderAsProjectAction() {
         this(Utilities.actionsGlobalContext());
     }
 
-    OpenFolderAsProjectAction(Lookup lkp) {
-        this.lkp = lkp;
+    public OpenFolderAsProjectAction(Lookup lkp) {
         putValue(NAME, NbBundle.getMessage(OpenFolderAsProjectAction.class, "ACT_Open"));
     }
 
-//    @Override
-//    public boolean isEnabled() {
-//        FileObject fo = getFileObject();
-//        return fo != null && !fo.isVirtual() && fo.isFolder();
-//    }
-//
-//    private FileObject getFileObject() {
-//        DataObject ob = lkp.lookup(DataObject.class);
-//        if (ob != null) {
-//            return ob.getPrimaryFile();
-//        }
-//        return null;
-//    }
     @Override
     public void actionPerformed(ActionEvent ae) {
-//        final FileObject fo = getFileObject();
         File f = new FileChooserBuilder(OpenFolderAsProjectAction.class)
                 .setDirectoriesOnly(true)
                 .setTitle("Open Folder as Project")
@@ -133,5 +113,10 @@ public class OpenFolderAsProjectAction extends AbstractAction {
                 }
             });
         }
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

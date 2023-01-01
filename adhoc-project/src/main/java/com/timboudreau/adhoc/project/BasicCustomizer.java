@@ -21,6 +21,7 @@ package com.timboudreau.adhoc.project;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.nio.charset.Charset;
+import javax.swing.JPanel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import org.netbeans.spi.project.ui.support.ProjectCustomizer;
@@ -31,13 +32,13 @@ import org.openide.util.RequestProcessor.Task;
  *
  * @author tim
  */
-public class BasicCustomizer extends javax.swing.JPanel implements FocusListener, DocumentListener, Runnable {
+public class BasicCustomizer extends JPanel implements FocusListener, DocumentListener, Runnable {
     private final AdhocProject prj;
 
     public BasicCustomizer(AdhocProject prj) {
         this.prj = prj;
         initComponents();
-        jTextField1.setText(prj.getDisplayName());
+        jTextField1.setText(prj.getProjectDirectory().getName());
         jTextField1.getDocument().addDocumentListener(this);
         jTextField1.addFocusListener(this);
     }
@@ -134,6 +135,6 @@ public class BasicCustomizer extends javax.swing.JPanel implements FocusListener
     private final Task task = RequestProcessor.getDefault().create(this);
     @Override
     public void run() {
-        prj.setDisplayName(jTextField1.getText());
+//        prj.setDisplayName(jTextField1.getText());
     }
 }

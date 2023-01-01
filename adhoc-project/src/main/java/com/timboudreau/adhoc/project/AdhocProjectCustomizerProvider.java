@@ -90,6 +90,7 @@ public class AdhocProjectCustomizerProvider implements CustomizerProvider {
         if (ctgr.getName().equals("Basic")) {
             return new BasicCustomizer(project);
         }
+
         return null;
     }
 }

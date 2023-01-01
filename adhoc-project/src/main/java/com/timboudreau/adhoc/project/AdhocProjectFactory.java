@@ -50,7 +50,7 @@ public class AdhocProjectFactory implements ProjectFactory, ProjectFactory2 {
 
     private static Set<AdhocProject> cache = new WeakSet<>();
     private static long lastFetch = 0;
-    private static final Set<String> all = Collections.synchronizedSet(new HashSet<String>());
+    private static final Set<String> all = Collections.synchronizedSet(new HashSet<>());
 
     private static Preferences projectsList(Flusher f) {
         Preferences pp = NbPreferences.forModule(AdhocProjectFactory.class);
@@ -107,9 +107,10 @@ public class AdhocProjectFactory implements ProjectFactory, ProjectFactory2 {
                 Exceptions.printStackTrace(ex);
                 return Collections.emptySet();
             }
-//            all.clear();
+
             all.addAll(result);
         }
+
         return all;
     }
 
@@ -135,36 +136,6 @@ public class AdhocProjectFactory implements ProjectFactory, ProjectFactory2 {
             f.flush();
         }
         ProjectManager.getDefault().clearNonProjectCache();
-    }
-
-    static AdhocProject findLiveOwner(FileObject fo) {
-        do {
-            if (check(fo)) {
-                try {
-                    for (AdhocProject a : cache) {
-                        if (a != null) {
-                            if (a.getProjectDirectory().equals(fo)) {
-                                return a;
-                            }
-                        }
-                    }
-                    Project pp = ProjectManager.getDefault().findProject(fo);
-                    if (pp != null) {
-                        AdhocProject result = (AdhocProject) pp.getLookup().lookup(AdhocProject.class);
-                        if (result != null) {
-                            return result;
-                        }
-                    }
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
-                } catch (IllegalArgumentException ex) {
-                    Exceptions.printStackTrace(ex);
-                }
-
-            }
-            fo = fo.getParent();
-        } while (fo != null);
-        return null;
     }
 
     @Override
@@ -198,7 +169,7 @@ public class AdhocProjectFactory implements ProjectFactory, ProjectFactory2 {
             return null;
         }
         if (check(fo)) {
-            return new ProjectManager.Result(ImageUtilities.loadImageIcon("com/timboudreau/adhoc/project/adhoc.png", true));
+            return new ProjectManager.Result(ImageUtilities.loadImageIcon("org/netbeans/swing/plaf/resources/hidpi-folder-closed.png", true));
         }
         return null;
     }

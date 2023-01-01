@@ -20,16 +20,10 @@ package com.timboudreau.adhoc.project;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.io.File;
 import java.io.IOException;
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
-import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import javax.swing.Icon;
@@ -37,29 +31,10 @@ import javax.swing.text.Document;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectInformation;
 import org.netbeans.spi.project.ActionProvider;
-import static org.netbeans.spi.project.ActionProvider.COMMAND_COPY;
-import static org.netbeans.spi.project.ActionProvider.COMMAND_DELETE;
-import static org.netbeans.spi.project.ActionProvider.COMMAND_MOVE;
-import static org.netbeans.spi.project.ActionProvider.COMMAND_RENAME;
 import org.netbeans.spi.project.AuxiliaryProperties;
-import org.netbeans.spi.project.CopyOperationImplementation;
-import org.netbeans.spi.project.DeleteOperationImplementation;
-import org.netbeans.spi.project.FileOwnerQueryImplementation;
-import org.netbeans.spi.project.MoveOperationImplementation;
-import org.netbeans.spi.project.ProjectConfiguration;
 import org.netbeans.spi.project.ProjectState;
-import org.netbeans.spi.project.ui.LogicalViewProvider;
-import org.netbeans.spi.project.ui.support.DefaultProjectOperations;
-import org.netbeans.spi.project.ui.support.ProjectActionPerformer;
 import org.netbeans.spi.queries.FileEncodingQueryImplementation;
-import org.openide.DialogDescriptor;
-import org.openide.DialogDisplayer;
-import org.openide.NotifyDescriptor;
-import org.openide.filesystems.FileLock;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileUtil;
-import org.openide.loaders.DataObjectNotFoundException;
-import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
@@ -71,13 +46,9 @@ import org.openide.util.lookup.Lookups;
  *
  * @author Tim Boudreau
  */
-public class AdhocProject implements Project,
-        FileOwnerQueryImplementation, ProjectConfiguration,
-        ProjectActionPerformer, ActionProvider, LogicalViewProvider /*, CodeStylePreferences.Provider */ {
-
+public class AdhocProject implements Project, ActionProvider {
     private FileObject dir;
     private final AuxPropertiesImpl aux = new AuxPropertiesImpl();
-    private final CopyMoveRenameDelete ops = new CopyMoveRenameDelete();
     private final EncQueryImpl encodingQuery;
     public static final String CUSTOMIZE_COMMAND = "customize";
     private final PropertyChangeSupport supp = new PropertyChangeSupport(this);
@@ -97,12 +68,39 @@ public class AdhocProject implements Project,
 
     @Override
     public Lookup getLookup() {
-        return Lookups.fixed(this, aux, encodingQuery, ops, info, customizer);
+        return Lookups.fixed(this,
+                aux,
+                encodingQuery,
+                info,
+                customizer,
+                new AdhocProjectLogicalView(this));
     }
 
     @Override
-    public String getDisplayName() {
-        return info.getDisplayName();
+    public String[] getSupportedActions() {
+        return new String[]{
+            CUSTOMIZE_COMMAND
+        };
+    }
+
+    @Override
+    public void invokeAction(String string, Lookup lkp) throws IllegalArgumentException {
+        switch (string) {
+            case CUSTOMIZE_COMMAND:
+                customizer.showCustomizer();
+                break;
+        }
+    }
+
+    @Override
+    public boolean isActionEnabled(String string, Lookup lkp) throws IllegalArgumentException {
+        switch (string) {
+            case CUSTOMIZE_COMMAND:
+                return true;
+        }
+
+        //do nothing
+        return false;
     }
 
     private class PI implements ProjectInformation {
@@ -131,7 +129,7 @@ public class AdhocProject implements Project,
 
         @Override
         public Icon getIcon() {
-            return ImageUtilities.loadImageIcon("com/timboudreau/adhoc/project/adhoc.png", false);
+            return ImageUtilities.loadImageIcon("org/netbeans/swing/plaf/resources/hidpi-folder-closed.png", false);
         }
 
         @Override
@@ -156,90 +154,6 @@ public class AdhocProject implements Project,
 
     public void removePropertyChangeListener(PropertyChangeListener pl) {
         supp.removePropertyChangeListener(pl);
-    }
-
-    @Override
-    public boolean enable(Project prjct) {
-        return prjct.getLookup().lookup(AdhocProject.class) != null;
-    }
-
-    @Override
-    public void perform(Project prjct) {
-    }
-
-    @Override
-    public String[] getSupportedActions() {
-        return new String[]{
-            COMMAND_DELETE, COMMAND_MOVE, COMMAND_COPY, COMMAND_RENAME, CUSTOMIZE_COMMAND
-        };
-    }
-
-    @Override
-    public void invokeAction(String string, Lookup lkp) throws IllegalArgumentException {
-        switch (string) {
-            case COMMAND_MOVE:
-                DefaultProjectOperations.performDefaultMoveOperation(this);
-                break;
-            case COMMAND_DELETE:
-                DefaultProjectOperations.performDefaultDeleteOperation(this);
-                break;
-            case COMMAND_COPY:
-                DefaultProjectOperations.performDefaultCopyOperation(this);
-                break;
-            case COMMAND_RENAME:
-                DialogDescriptor.InputLine line = new DialogDescriptor.InputLine("New Name", "Rename Project");
-                if (NotifyDescriptor.OK_OPTION.equals(DialogDisplayer.getDefault().notify(line))) {
-                    try {
-                        String txt = line.getInputText().trim();
-                        if (info.getName().equals(txt) || txt.isEmpty() || txt.indexOf('\\') >= 0 || txt.indexOf(':') >= 0 || txt.indexOf('/') >= 0 || txt.indexOf(';') >= 0) {
-                            DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message("Bad characters in name"));
-                            return;
-                        }
-                        FileObject parent = getProjectDirectory().getParent();
-                        if (parent.getFileObject(txt) != null) {
-                            DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(
-                                    "A folder with that name already exists\n" + txt));
-                            return;
-                        }
-                        FileObject fo = getProjectDirectory();
-                        FileLock lock = fo.lock();
-                        Preferences old = preferences(true);
-                        try {
-                            fo.rename(lock, txt, null);
-                            FileObject nue = parent.getFileObject(txt);
-                            assert nue != null;
-                            AdhocProjectFactory.mark(nue);
-                            dir = nue;
-                            Preferences nuPrefs = preferences(true);
-                            copyPreferences(old, nuPrefs);
-                        } finally {
-                            lock.releaseLock();
-                        }
-                    } catch (IOException | BackingStoreException ex) {
-                        Exceptions.printStackTrace(ex);
-                    }
-                }
-                break;
-            case CUSTOMIZE_COMMAND:
-                customizer.showCustomizer();
-                break;
-        }
-    }
-
-    @Override
-    public boolean isActionEnabled(String string, Lookup lkp) throws IllegalArgumentException {
-        switch (string) {
-            case COMMAND_MOVE:
-            case COMMAND_DELETE:
-            case COMMAND_COPY:
-            case COMMAND_RENAME:
-                return getProjectDirectory().isValid() && getProjectDirectory().canRead() && getProjectDirectory().canWrite();
-            case CUSTOMIZE_COMMAND:
-                return true;
-
-        }
-        //do nothing
-        return false;
     }
 
     public void setEncoding(Charset charset) {
@@ -276,17 +190,6 @@ public class AdhocProject implements Project,
         return nodeName;
     }
 
-    private void copyPreferences(Preferences orig, Preferences into) throws BackingStoreException {
-        for (String s : orig.keys()) {
-            into.put(s, orig.get(s, null));
-        }
-        for (String kid : orig.childrenNames()) {
-            Preferences child = orig.node(kid);
-            Preferences newChild = into.node(kid);
-            copyPreferences(child, newChild);
-        }
-    }
-
     Preferences preferences(boolean create) throws BackingStoreException {
         Preferences prefs = NbPreferences.forModule(AdhocProjectNode.class);
         String n = prefsNodeName();
@@ -297,7 +200,6 @@ public class AdhocProject implements Project,
         return null;
     }
 
-//    @Override
     public Preferences forFile(FileObject fo, String string) {
         try {
             Preferences p = preferences(true);
@@ -308,117 +210,8 @@ public class AdhocProject implements Project,
         }
     }
 
-//    @Override
     public Preferences forDocument(Document dcmnt, String string) {
         return forFile(null, string);
-    }
-
-    @Override
-    public Project getOwner(URI uri) {
-        FileObject fo = FileUtil.toFileObject(FileUtil.normalizeFile(Utilities.toFile(uri)));
-        return fo == null ? null : getOwner(fo);
-    }
-
-    @Override
-    public Project getOwner(FileObject fo) {
-        FileObject check = fo;
-        do {
-            if (AdhocProjectFactory.check(check)) {
-                if (check.equals(getProjectDirectory())) {
-                    return this;
-                } else {
-                    return null;
-                }
-            }
-            check = check.getParent();
-        } while (check != null);
-        return null;
-    }
-
-    public void setDisplayName(String name) {
-        try {
-            String old = getDisplayName();
-            if (!old.equals(name)) {
-                preferences(true).put("name", name);
-                supp.firePropertyChange(ProjectInformation.PROP_DISPLAY_NAME, old, name);
-                info.supp.firePropertyChange(ProjectInformation.PROP_DISPLAY_NAME, old, name);
-            }
-        } catch (BackingStoreException bse) {
-            Exceptions.printStackTrace(bse);
-        }
-    }
-
-    private class CopyMoveRenameDelete implements CopyOperationImplementation, DeleteOperationImplementation, MoveOperationImplementation {
-
-        @Override
-        public void notifyCopying() throws IOException {
-            //do nothing
-        }
-
-        @Override
-        public void notifyCopied(Project prjct, File file, String string) throws IOException {
-            //do nothing
-            AdhocProject p = prjct.getLookup().lookup(AdhocProject.class);
-            if (p != null) {
-                try {
-                    Preferences originalPreferences = p.preferences(false);
-                    if (originalPreferences != null) {
-                        Preferences myPreferences = preferences(true);
-                        copyPreferences(originalPreferences, myPreferences);
-                    }
-                } catch (BackingStoreException ex) {
-                    throw new IOException(ex);
-                }
-            }
-        }
-
-        @Override
-        public List<FileObject> getMetadataFiles() {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public List<FileObject> getDataFiles() {
-            List<FileObject> all = new ArrayList<>();
-            return traverse(getProjectDirectory(), all);
-        }
-
-        private List<FileObject> traverse(FileObject base, List<FileObject> all) {
-            for (FileObject fo : base.getChildren()) {
-                all.add(fo);
-                if (fo.isFolder() && !all.contains(fo)) {
-                    traverse(fo, all);
-                }
-            }
-            return all;
-        }
-
-        @Override
-        public void notifyDeleting() throws IOException {
-            //do nothing
-        }
-
-        @Override
-        public void notifyDeleted() throws IOException {
-            try {
-                Preferences p = preferences(false);
-                if (p != null) {
-                    p.removeNode();
-                }
-            } catch (BackingStoreException ex) {
-                throw new IOException(ex);
-            }
-        }
-
-        @Override
-        public void notifyMoving() throws IOException {
-            //do nothing
-        }
-
-        @Override
-        public void notifyMoved(Project prjct, File file, String string) throws IOException {
-            notifyCopied(prjct, file, string);
-        }
     }
 
     private class EncQueryImpl extends FileEncodingQueryImplementation {
@@ -466,31 +259,5 @@ public class AdhocProject implements Project,
                 return Collections.emptySet();
             }
         }
-    }
-    private Reference<AdhocProjectNode> logicalView;
-
-    @Override
-    public Node createLogicalView() {
-        AdhocProjectNode view = logicalView == null ? null
-                : logicalView.get();
-        if (view == null) {
-            try {
-                view = new AdhocProjectNode(this);
-                logicalView = new WeakReference<>(view);
-            } catch (DataObjectNotFoundException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-        }
-        return view == null ? Node.EMPTY : view;
-    }
-
-    @Override
-    public Node findPath(Node node, Object o) {
-        AdhocProjectNode view = logicalView == null ? null
-                : logicalView.get();
-        if (view != null) {
-            view.findPath(node, o);
-        }
-        return null;
     }
 }
