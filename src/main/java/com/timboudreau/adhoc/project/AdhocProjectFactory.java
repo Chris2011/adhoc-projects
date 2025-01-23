@@ -19,6 +19,8 @@
 package com.timboudreau.adhoc.project;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -61,15 +63,47 @@ public class AdhocProjectFactory implements ProjectFactory, ProjectFactory2 {
     }
 
     private static Preferences forProject(Flusher f, FileObject fo) {
-        Preferences res = projectsList(f).node(toNodeName(fo));
+        String nodeName = toNodeName(fo);
+        Preferences res = projectsList(f).node(nodeName);
         f.add(res);
         return res;
     }
 
     private static String toNodeName(FileObject fo) {
-        return fo.getPath().replace('/', '~').replace('\\', '!').replace(':', '~');
+        String path = fo.getPath();
+        // Hashen, falls der Pfad zu lang ist
+        if (path.length() > 80) {
+            return hashString(path);
+        }
+        return sanitizePath(path);
     }
 
+    private static String sanitizePath(String path) {
+        return path.replace('/', '~').replace('\\', '!').replace(':', '~');
+    }
+
+    private static String hashString(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes("UTF-8"));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                hexString.append(String.format("%02x", b));
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException | java.io.UnsupportedEncodingException ex) {
+            throw new RuntimeException("Failed to hash string", ex);
+        }
+    }
+
+//    private static Preferences forProject(Flusher f, FileObject fo) {
+//        Preferences res = projectsList(f).node(toNodeName(fo));
+//        f.add(res);
+//        return res;
+//    }
+//    private static String toNodeName(FileObject fo) {
+//        return fo.getPath().replace('/', '~').replace('\\', '!').replace(':', '~');
+//    }
     private static class Flusher {
 
         private final List<Preferences> all = new ArrayList<>();
@@ -119,12 +153,12 @@ public class AdhocProjectFactory implements ProjectFactory, ProjectFactory2 {
         return check(fo);
     }
 
-    static boolean check(FileObject fo) {
+    public static boolean check(FileObject fo) {
         boolean result = fo == null ? false : knownProjects().contains(toNodeName(fo)) && fo.isFolder();
         return result;
     }
 
-    static void mark(FileObject fo) throws IOException {
+    public static void mark(FileObject fo) throws IOException {
         Flusher f = new Flusher();
         Preferences mine = forProject(f, fo);
         mine.putBoolean("alive", true);

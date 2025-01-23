@@ -5,3 +5,4 @@
 *.war
 *.ear
 /adhoc-project/target/
+/open-folder-as-project/target/

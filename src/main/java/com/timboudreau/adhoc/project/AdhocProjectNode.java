@@ -21,7 +21,12 @@ package com.timboudreau.adhoc.project;
 import java.awt.Image;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import javax.swing.Action;
 import org.netbeans.api.project.ProjectInformation;
+import org.netbeans.spi.project.ui.support.CommonProjectActions;
 import org.openide.loaders.DataObjectNotFoundException;
 import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
@@ -35,17 +40,18 @@ import org.openide.util.lookup.ProxyLookup;
  * @author Tim Boudreau
  */
 public class AdhocProjectNode extends FilterNode implements PropertyChangeListener {
+
     private final AdhocProject prj;
 
     public AdhocProjectNode(Node node, AdhocProject project)
-            throws DataObjectNotFoundException {
+        throws DataObjectNotFoundException {
         super(node,
-                new FilterNode.Children(node),
-                new ProxyLookup(
-                        new Lookup[]{
-                            Lookups.singleton(project),
-                            node.getLookup()
-                        }));
+            new FilterNode.Children(node),
+            new ProxyLookup(
+                new Lookup[]{
+                    Lookups.singleton(project),
+                    node.getLookup()
+                }));
         this.prj = project;
     }
 
@@ -66,7 +72,7 @@ public class AdhocProjectNode extends FilterNode implements PropertyChangeListen
 
     @Override
     public String getShortDescription() {
-        return "Ad-Hoc Project in " + prj.getProjectDirectory().getPath();
+        return prj.getProjectDirectory().getPath() + " is a custom project (Folder opened as project).";
     }
 
     @Override
@@ -76,5 +82,26 @@ public class AdhocProjectNode extends FilterNode implements PropertyChangeListen
                 fireDisplayNameChange(pce.getOldValue() + "", pce.getNewValue() + "");
             }
         }
+    }
+
+    @Override
+    public Action[] getActions(boolean context) {
+        List<Action> actions = new ArrayList<>(Arrays.asList(super.getActions(context)));
+
+        actions.removeIf(action -> {
+            if (action != null) {
+                String actionClassName = action.getClass().getName();
+
+                return actionClassName.equals("org.netbeans.modules.project.ui.actions.OpenProjectFolderAction")
+                    || actionClassName.equals("org.openide.actions.PropertiesAction");
+            }
+
+            return false;
+        });
+
+        actions.addAll(List.of(CommonProjectActions.closeProjectAction(),
+            CommonProjectActions.customizeProjectAction()));
+
+        return actions.toArray(new Action[0]);
     }
 }
