@@ -1,0 +1,320 @@
+/*
+ * Copyright 2025 Christian Lenz <christian.lenz@gmx.net>.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+plugins {
+    id 'java'
+}
+
+group = 'io.github.chris2011.netbeans.plugins'
+version = '3.0'
+description = 'Open any folder as a NetBeans project'
+
+ext {
+    netbeansVersion = "RELEASE110"
+    moduleName = 'io.github.chris2011.netbeans.plugins.openfolder'
+    moduleDisplayName = 'Open Folder as Project'
+    moduleCategory = 'IDE'
+    moduleShortDescription = 'Open any folder as a NetBeans project'
+
+    // NetBeans installation directory
+    netbeansInstallDir = project.hasProperty('netbeansInstallDir')
+        ? project.property('netbeansInstallDir')
+        : findNetBeansInstallation()
+}
+
+// Configure nbm extension from root project
+nbm {
+    codeNameBase = moduleName
+    moduleName = moduleDisplayName
+    moduleAuthor = 'Christian Lenz (originally by Tim Boudreau)'
+    homepageUrl = 'https://github.com/Chris2011/netbeans-plugin-collection/ide/open-folder-as-project'
+    moduleDependencies = 'org.openide.filesystems > 9.0, org.openide.util > 9.0, org.openide.util.lookup > 8.0, org.openide.nodes > 7.0, org.openide.loaders > 7.0, org.openide.awt > 7.0, org.openide.dialogs > 7.0, org.netbeans.modules.projectapi > 1.0, org.netbeans.modules.projectuiapi > 1.0, org.netbeans.modules.queries > 1.0'
+}
+
+// Try to find NetBeans installation automatically
+def findNetBeansInstallation() {
+    def possiblePaths = []
+    def osName = System.getProperty('os.name').toLowerCase()
+
+    if (osName.contains('win')) {
+        def programFiles = System.getenv('ProgramFiles')
+        def programFilesX86 = System.getenv('ProgramFiles(x86)')
+        if (programFiles) {
+            possiblePaths << new File(programFiles, 'NetBeans')
+            possiblePaths << new File(programFiles, 'Apache NetBeans')
+        }
+        if (programFilesX86) {
+            possiblePaths << new File(programFilesX86, 'NetBeans')
+            possiblePaths << new File(programFilesX86, 'Apache NetBeans')
+        }
+        possiblePaths << new File('C:/NetBeans')
+        possiblePaths << new File('C:/Apache NetBeans')
+    } else if (osName.contains('mac')) {
+        possiblePaths << new File('/Applications/NetBeans')
+        possiblePaths << new File('/Applications/Apache NetBeans')
+        possiblePaths << new File(System.getProperty('user.home'), 'Applications/NetBeans')
+    } else {
+        possiblePaths << new File('/opt/netbeans')
+        possiblePaths << new File('/usr/local/netbeans')
+        possiblePaths << new File(System.getProperty('user.home'), 'netbeans')
+    }
+
+    for (basePath in possiblePaths) {
+        if (basePath.exists() && basePath.isDirectory()) {
+            def versions = basePath.listFiles()?.findAll {
+                it.isDirectory() && new File(it, 'bin').exists()
+            }?.sort { a, b ->
+                def vA = a.name.replaceAll('[^0-9.]', '')
+                def vB = b.name.replaceAll('[^0-9.]', '')
+                try {
+                    return Double.parseDouble(vB ?: '0') <=> Double.parseDouble(vA ?: '0')
+                } catch (e) {
+                    return vB <=> vA
+                }
+            }
+            if (versions && !versions.isEmpty()) {
+                return versions.first().absolutePath
+            }
+            if (new File(basePath, 'bin').exists()) {
+                return basePath.absolutePath
+            }
+        }
+    }
+    return null
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://netbeans.apidesign.org/maven2/' }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+// Ensure resources are available for annotation processor
+tasks.named('compileJava').configure {
+    options.annotationProcessorPath = files(configurations.annotationProcessor) +
+        files("${buildDir}/classes/java/main") +
+        files(sourceSets.main.resources.srcDirs) +
+        files(sourceSets.main.java.srcDirs)
+}
+
+dependencies {
+    // Annotation processors for NetBeans module annotations
+    annotationProcessor "org.netbeans.api:org-openide-util:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-openide-util-lookup:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-openide-awt:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-openide-filesystems:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-netbeans-modules-projectuiapi:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-netbeans-modules-projectuiapi-base:${netbeansVersion}"
+
+    compileOnly "org.netbeans.api:org-openide-modules:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-util:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-util-lookup:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-filesystems:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-nodes:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-loaders:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-awt:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-dialogs:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-projectapi:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-projectuiapi:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-projectuiapi-base:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-editor-indent-project:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-queries:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-util-ui:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-filesystems-nb:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-actions:${netbeansVersion}"
+
+    testImplementation "org.netbeans.modules:org-netbeans-modules-masterfs:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-netbeans-modules-projectapi:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-netbeans-modules-projectuiapi:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-openide-nodes:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-openide-util:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-openide-util-lookup:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-openide-filesystems:${netbeansVersion}"
+    testImplementation 'junit:junit:4.13.2'
+}
+
+// After compilation, replace generated Bundle.properties with source version
+tasks.named('classes').configure {
+    doLast {
+        def sourceBundle = file('src/main/resources/io/github/chris2011/netbeans/plugins/openfolder/Bundle.properties')
+        def targetBundle = file("${buildDir}/classes/java/main/io/github/chris2011/netbeans/plugins/openfolder/Bundle.properties")
+        if (sourceBundle.exists()) {
+            targetBundle.text = sourceBundle.text
+        }
+    }
+}
+
+// Configure the JAR with NetBeans manifest attributes (must be in afterEvaluate to override root)
+afterEvaluate {
+    jar {
+        manifest {
+            attributes(
+                'Manifest-Version': '1.0',
+                'OpenIDE-Module': moduleName,
+                'OpenIDE-Module-Name': moduleDisplayName,
+                'OpenIDE-Module-Display-Category': moduleCategory,
+                'OpenIDE-Module-Short-Description': moduleShortDescription,
+                'OpenIDE-Module-Specification-Version': version,
+                'OpenIDE-Module-Implementation-Version': "${version}-${new Date().format('yyyyMMdd')}",
+                'OpenIDE-Module-Localizing-Bundle': 'io/github/chris2011/netbeans/plugins/openfolder/Bundle.properties',
+                'OpenIDE-Module-Layer': 'io/github/chris2011/netbeans/plugins/openfolder/layer.xml',
+                'OpenIDE-Module-Requires': 'org.openide.modules.ModuleFormat1',
+                'OpenIDE-Module-Module-Dependencies': 'org.openide.filesystems > 9.0, org.openide.filesystems.nb > 9.0, org.openide.util > 9.0, org.openide.util.lookup > 8.0, org.openide.nodes > 7.0, org.openide.loaders > 7.0, org.openide.awt > 7.0, org.openide.dialogs > 7.0, org.netbeans.modules.projectapi > 1.0, org.netbeans.modules.projectuiapi > 1.0, org.netbeans.modules.queries > 1.0, org.netbeans.modules.editor.indent.project/0 > 1.0',
+                'AutoUpdate-Show-In-Client': 'true',
+                'AutoUpdate-Essential-Module': 'false'
+            )
+        }
+
+        archiveBaseName = moduleName.replace('.', '-')
+    }
+}
+
+// Generate info.xml for the NBM
+task generateInfoXml {
+    def outputDir = file("${buildDir}/nbm-temp/Info")
+    def outputFile = file("${outputDir}/info.xml")
+
+    outputs.file outputFile
+
+    doLast {
+        outputDir.mkdirs()
+
+        outputFile.text = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//NetBeans//DTD Autoupdate Module Info 2.5//EN" "http://www.netbeans.org/dtds/autoupdate-info-2_5.dtd">
+<module codenamebase="${moduleName}"
+        distribution=""
+        downloadsize="0"
+        homepage="https://github.com/Chris2011/netbeans-plugin-collection"
+        license="MIT"
+        moduleauthor="Christian Lenz (originally by Tim Boudreau)"
+        needsrestart="false"
+        releasedate="${new Date().format('yyyy/MM/dd')}">
+    <manifest OpenIDE-Module="${moduleName}"
+              OpenIDE-Module-Display-Category="${moduleCategory}"
+              OpenIDE-Module-Implementation-Version="${version}"
+              OpenIDE-Module-Name="${moduleDisplayName}"
+              OpenIDE-Module-Short-Description="${moduleShortDescription}"
+              OpenIDE-Module-Specification-Version="${version}"/>
+</module>
+"""
+    }
+}
+
+// Override the generateUpdateTracking task from root
+tasks.named('generateUpdateTracking').configure {
+    doLast {
+        def outputDir = file("${buildDir}/nbm-temp/config/Modules")
+        outputDir.mkdirs()
+        def outputFile = file("${outputDir}/${moduleName.replace('.', '-')}.xml")
+        def jarName = "${moduleName.replace('.', '-')}-${version}.jar"
+
+        outputFile.text = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//NetBeans//DTD Module Status 1.0//EN" "http://www.netbeans.org/dtds/module-status-1_0.dtd">
+<module name="${moduleName}">
+    <param name="autoload">false</param>
+    <param name="eager">false</param>
+    <param name="enabled">true</param>
+    <param name="jar">modules/${jarName}</param>
+    <param name="reloadable">false</param>
+    <param name="specversion">${version}</param>
+</module>
+"""
+    }
+}
+
+// Create the NBM file
+task createNbm(type: Zip, dependsOn: [jar, generateInfoXml, generateUpdateTracking]) {
+    group = 'build'
+    description = 'Creates the NetBeans Module (.nbm) file'
+
+    archiveExtension = 'nbm'
+    archiveBaseName = moduleName.replace('.', '-')
+    destinationDirectory = file("${buildDir}/nbm")
+
+    // Add the module JAR
+    from(jar.archiveFile) {
+        into "netbeans/modules"
+    }
+
+    // Add the info.xml
+    from("${buildDir}/nbm-temp/Info") {
+        into "Info"
+    }
+
+    // Add update tracking file
+    from("${buildDir}/nbm-temp/config/Modules") {
+        into "netbeans/config/Modules"
+    }
+}
+
+// Main build task
+build.dependsOn createNbm
+
+// Clean task extension
+clean {
+    delete "${buildDir}/nbm"
+    delete "${buildDir}/nbm-temp"
+    delete "${buildDir}/testuserdir"
+}
+
+// Override prepareTestUserDir from root
+tasks.named('prepareTestUserDir').configure {
+    doLast {
+        def testUserDir = file("${buildDir}/testuserdir")
+        def modulesDir = file("${testUserDir}/modules")
+        def configModulesDir = file("${testUserDir}/config/Modules")
+
+        modulesDir.mkdirs()
+        configModulesDir.mkdirs()
+
+        copy {
+            from jar.archiveFile
+            into modulesDir
+        }
+
+        copy {
+            from "${buildDir}/nbm-temp/config/Modules"
+            into configModulesDir
+        }
+
+        println "Test userdir prepared at: ${testUserDir}"
+    }
+}
+
+// Override run task from root to use our netbeansInstallDir
+tasks.named('run').configure {
+    doFirst {
+        if (!netbeansInstallDir) {
+            throw new GradleException("""
+NetBeans installation not found!
+
+Please specify the NetBeans installation directory:
+  - Via command line: ./gradlew run -PnetbeansInstallDir=/path/to/netbeans
+  - Or in gradle.properties: netbeansInstallDir=/path/to/netbeans
+""")
+        }
+    }
+}

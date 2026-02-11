@@ -1,3 +1,2 @@
 Manifest-Version: 1.0
-OpenIDE-Module-Layer: com/timboudreau/adhoc/project/layer.xml
-OpenIDE-Module-Localizing-Bundle: com/timboudreau/adhoc/project/Bundle.properties
+OpenIDE-Module-Localizing-Bundle: io/github/chris2011/netbeans/plugins/openfolder/Bundle.properties
