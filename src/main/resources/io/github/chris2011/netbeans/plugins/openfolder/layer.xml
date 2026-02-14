@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
  Copyright 2025 Christian Lenz <christian.lenz@gmx.net>.
 
@@ -18,17 +19,12 @@
  specific language governing permissions and limitations
  under the License.
  -->
-<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.2//EN"
                             "http://www.netbeans.org/dtds/filesystem-1_2.dtd">
 <filesystem>
     <folder name="Projects">
         <folder name="io-github-chris2011-netbeans-plugins-openfolder">
             <folder name="Actions">
-                <file name="org-openide-actions-FindAction.shadow">
-                    <attr name="originalFile" stringvalue="Actions/Edit/org-openide-actions-FindAction.instance"/>
-                    <attr name="position" intvalue="1000"/>
-                </file>
                 <file name="sep-actions-1.instance">
                     <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
                     <attr name="position" intvalue="1500"/>

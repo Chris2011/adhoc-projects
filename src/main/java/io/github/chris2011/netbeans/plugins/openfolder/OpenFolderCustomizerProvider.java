@@ -88,12 +88,4 @@ public class OpenFolderCustomizerProvider implements CustomizerProvider {
     public static ProjectCustomizer.CompositeCategoryProvider formatting() {
         return Customizers.createFormattingCategoryProvider(Collections.emptyMap());
     }
-
-    public JComponent create(ProjectCustomizer.Category ctgr) {
-        if (ctgr.getName().equals("Basic")) {
-            return new BasicCustomizer(project);
-        }
-
-        return null;
-    }
 }
