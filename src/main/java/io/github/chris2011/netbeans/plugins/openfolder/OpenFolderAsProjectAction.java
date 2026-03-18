@@ -29,11 +29,13 @@ import org.netbeans.api.project.ProjectManager;
 import org.netbeans.api.project.ui.OpenProjects;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
+import org.openide.awt.ActionReferences;
 import org.openide.awt.ActionRegistration;
 import org.openide.filesystems.FileChooserBuilder;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.Exceptions;
+import org.openide.util.ImageUtilities;
 import org.openide.util.NbBundle;
 import org.openide.util.RequestProcessor;
 
@@ -45,13 +47,19 @@ import org.openide.util.RequestProcessor;
 @NbBundle.Messages("ACT_Open=Open Folder as Project")
 @ActionID(id = "io.github.chris2011.netbeans.plugins.openfolder.OpenFolderAsProjectAction", category = "File")
 @ActionRegistration(displayName = "#ACT_Open", lazy = false)
-@ActionReference(position = 300, path = "Menu/File")
+@ActionReferences({
+    @ActionReference(position = 300, path = "Menu/File"),
+    @ActionReference(position = 315, path = "Toolbars/File")
+})
 public class OpenFolderAsProjectAction extends AbstractAction {
+
+    private static final String ICON_BASE = "io/github/chris2011/netbeans/plugins/openfolder/open-folder.png";
 
     public OpenFolderAsProjectAction() {
         super(Bundle.ACT_Open());
 
-        putValue(SMALL_ICON, ImageUtils.getFolderWithNetBeansLogo());
+        putValue("iconBase", ICON_BASE);
+        putValue(SMALL_ICON, ImageUtilities.loadImageIcon(ICON_BASE, true));
     }
 
     @Override

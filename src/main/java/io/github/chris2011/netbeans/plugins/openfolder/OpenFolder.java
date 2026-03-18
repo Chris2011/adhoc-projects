@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import org.netbeans.api.project.Project;
+import org.openide.util.ImageUtilities;
 import org.netbeans.api.project.ProjectInformation;
 import org.netbeans.api.project.ProjectManager;
 import org.netbeans.api.project.ui.OpenProjects;
@@ -170,7 +170,7 @@ public class OpenFolder implements Project, ActionProvider {
 
         @Override
         public Icon getIcon() {
-            return new ImageIcon(ImageUtils.getFolderWithNetBeansLogo());
+            return ImageUtilities.loadImageIcon("io/github/chris2011/netbeans/plugins/openfolder/open-folder.png", true);
         }
 
         @Override

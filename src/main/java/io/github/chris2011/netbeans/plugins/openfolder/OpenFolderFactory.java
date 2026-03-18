@@ -21,9 +21,8 @@
 package io.github.chris2011.netbeans.plugins.openfolder;
 
 import java.io.IOException;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import org.netbeans.api.project.Project;
+import org.openide.util.ImageUtilities;
 import org.netbeans.api.project.ProjectManager;
 import org.netbeans.api.project.ProjectManager.Result;
 import org.netbeans.spi.project.ProjectFactory;
@@ -67,8 +66,7 @@ public class OpenFolderFactory implements ProjectFactory, ProjectFactory2 {
     @Override
     public Result isProject2(FileObject fo) {
         if (isProject(fo)) {
-            Icon folderIcon = new ImageIcon(ImageUtils.getFolderWithNetBeansLogo());
-            return new ProjectManager.Result(folderIcon);
+            return new ProjectManager.Result(ImageUtilities.loadImageIcon("io/github/chris2011/netbeans/plugins/openfolder/open-folder.png", true));
         }
         return null;
     }

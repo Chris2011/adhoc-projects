@@ -35,6 +35,7 @@ import org.netbeans.spi.project.ui.support.CommonProjectActions;
 import org.openide.loaders.DataObjectNotFoundException;
 import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
+import org.openide.util.ImageUtilities;
 import org.openide.util.WeakListeners;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
@@ -111,12 +112,12 @@ public class OpenFolderNode extends FilterNode implements PropertyChangeListener
 
     @Override
     public Image getIcon(int type) {
-        return ImageUtils.getFolderWithNetBeansLogo();
+        return ImageUtilities.loadImage("io/github/chris2011/netbeans/plugins/openfolder/open-folder.png", true);
     }
 
     @Override
     public Image getOpenedIcon(int type) {
-        return ImageUtils.getFolderWithNetBeansLogo();
+        return ImageUtilities.loadImage("io/github/chris2011/netbeans/plugins/openfolder/open-folder.png", true);
     }
 
     @Override

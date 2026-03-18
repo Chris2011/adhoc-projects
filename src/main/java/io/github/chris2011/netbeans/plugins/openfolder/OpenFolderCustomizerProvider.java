@@ -29,6 +29,7 @@ import org.netbeans.modules.editor.indent.project.api.Customizers;
 import org.netbeans.spi.project.ui.CustomizerProvider;
 import org.netbeans.spi.project.ui.support.ProjectCustomizer;
 import org.openide.util.HelpCtx;
+import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 
@@ -68,7 +69,7 @@ public class OpenFolderCustomizerProvider implements CustomizerProvider {
         return new ProjectCustomizer.CompositeCategoryProvider() {
             @Override
             public ProjectCustomizer.Category createCategory(Lookup lkp) {
-                return ProjectCustomizer.Category.create("Basic", "Basic", ImageUtils.getFolderWithNetBeansLogo());
+                return ProjectCustomizer.Category.create("Basic", "Basic", ImageUtilities.loadImage("io/github/chris2011/netbeans/plugins/openfolder/open-folder.png", true));
             }
 
             @Override
