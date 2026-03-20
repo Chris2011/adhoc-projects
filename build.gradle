@@ -1,0 +1,171 @@
+/*
+ * Copyright 2025 Christian Lenz <christian.lenz@gmx.net>.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+plugins {
+    id 'java'
+}
+
+ext {
+    netbeansVersion = "RELEASE110"
+    moduleName = 'io.github.chris2011.netbeans.plugins.openfolder'
+    moduleDisplayName = 'Open Folder as Project'
+    moduleShortDescription = 'Open any folder as a NetBeans project'
+    moduleCategory = 'IDE'
+    moduleAuthor = 'Christian Lenz (originally by Tim Boudreau)'
+    moduleHomepage = 'https://github.com/Chris2011/netbeans-plugin-collection'
+    moduleLicense = 'MIT'
+    moduleCodeNameDashed = moduleName.replace('.', '-')
+
+    // Base version (major.minor) - bump manually for releases
+    baseVersion = '3.0'
+    // Build timestamp for automatic build versioning (YYYYMMDD.HHmm)
+    buildTimestamp = new Date().format('yyyyMMdd.HHmm')
+    // Full specification version: always unique, always higher than previous builds
+    // NetBeans uses this to detect updates → no need to uninstall before reinstalling
+    specVersion = "${baseVersion}.${buildTimestamp}"
+    buildDate = new Date().format('yyyyMMdd')
+}
+
+version = specVersion
+
+repositories {
+    mavenCentral()
+    maven { url 'https://netbeans.apidesign.org/maven2/' }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+// Ensure resources are available for annotation processor
+tasks.named('compileJava').configure {
+    options.annotationProcessorPath = files(configurations.annotationProcessor) +
+        files("${buildDir}/classes/java/main") +
+        files(sourceSets.main.resources.srcDirs) +
+        files(sourceSets.main.java.srcDirs)
+}
+
+dependencies {
+    // Annotation processors for NetBeans module annotations
+    annotationProcessor "org.netbeans.api:org-openide-util:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-openide-util-lookup:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-openide-awt:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-openide-filesystems:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-netbeans-modules-projectuiapi:${netbeansVersion}"
+    annotationProcessor "org.netbeans.api:org-netbeans-modules-projectuiapi-base:${netbeansVersion}"
+
+    compileOnly "org.netbeans.api:org-openide-modules:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-util:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-util-lookup:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-filesystems:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-nodes:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-loaders:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-awt:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-dialogs:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-projectapi:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-projectuiapi:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-projectuiapi-base:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-editor-indent-project:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-netbeans-modules-queries:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-util-ui:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-filesystems-nb:${netbeansVersion}"
+    compileOnly "org.netbeans.api:org-openide-actions:${netbeansVersion}"
+
+    testImplementation "org.netbeans.modules:org-netbeans-modules-masterfs:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-netbeans-modules-projectapi:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-netbeans-modules-projectuiapi:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-openide-nodes:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-openide-util:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-openide-util-lookup:${netbeansVersion}"
+    testImplementation "org.netbeans.api:org-openide-filesystems:${netbeansVersion}"
+    testImplementation 'junit:junit:4.13.2'
+}
+
+// Process nbm template files: replace ${...} placeholders with values from ext block
+task processNbmTemplates(type: Copy) {
+    from 'src/main/nbm'
+    into "${buildDir}/nbm-processed"
+    expand(
+        moduleName: moduleName,
+        version: specVersion,
+        baseVersion: baseVersion,
+        specVersion: specVersion,
+        moduleDisplayName: moduleDisplayName,
+        moduleShortDescription: moduleShortDescription,
+        moduleCategory: moduleCategory,
+        moduleAuthor: moduleAuthor,
+        moduleHomepage: moduleHomepage,
+        moduleLicense: moduleLicense,
+        moduleCodeNameDashed: moduleCodeNameDashed,
+        buildDate: buildDate
+    )
+}
+
+// Disable root's generateNbmInfo - we use our own info.xml template in src/main/nbm/Info/
+tasks.named('generateNbmInfo').configure {
+    enabled = false
+}
+
+// Override JAR task: depend on processNbmTemplates and use processed manifest
+tasks.named('jar').configure {
+    dependsOn processNbmTemplates
+}
+// Use afterEvaluate so this runs AFTER root's afterEvaluate.
+// Root's from(src/main/nbm/manifest.mf) loads the raw template with ${...} placeholders.
+// Our from() loads the processed manifest with resolved values.
+// For keys set by root's attributes(), those always win (which is fine - they resolve correctly).
+// For keys only in manifest.mf (Display-Category, AutoUpdate, etc.), our processed version wins.
+afterEvaluate {
+    jar {
+        manifest {
+            from("${buildDir}/nbm-processed/manifest.mf")
+        }
+    }
+}
+
+// Override packageNbm: exclude raw src/main/nbm files (from root), use processed templates instead
+tasks.named('packageNbm').configure {
+    dependsOn processNbmTemplates
+    // Filter out all files coming from src/main/nbm (added by root build.gradle)
+    // so only our processed versions with resolved placeholders are included
+    eachFile { details ->
+        def srcNbmPath = file('src/main/nbm').absolutePath
+        if (details.file.absolutePath.startsWith(srcNbmPath)) {
+            details.exclude()
+        }
+    }
+    // Add processed files (with resolved placeholders)
+    from("${buildDir}/nbm-processed") {
+        include '**/*'
+        exclude 'manifest.mf'  // manifest.mf goes into the JAR, not loose in NBM
+    }
+}
+
+// After compilation, replace generated Bundle.properties with source version
+tasks.named('classes').configure {
+    doLast {
+        def sourceBundle = file('src/main/resources/io/github/chris2011/netbeans/plugins/openfolder/Bundle.properties')
+        def targetBundle = file("${buildDir}/classes/java/main/io/github/chris2011/netbeans/plugins/openfolder/Bundle.properties")
+        if (sourceBundle.exists()) {
+            targetBundle.text = sourceBundle.text
+        }
+    }
+}

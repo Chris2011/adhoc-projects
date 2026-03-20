@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+OpenIDE-Module: ${moduleName}
+OpenIDE-Module-Specification-Version: ${version}
+OpenIDE-Module-Implementation-Version: ${version}-${buildDate}
+OpenIDE-Module-Name: ${moduleDisplayName}
+OpenIDE-Module-Short-Description: ${moduleShortDescription}
+OpenIDE-Module-Long-Description: ${moduleShortDescription}
+OpenIDE-Module-Module-Dependencies: org.openide.filesystems > 9.0, org.openide.filesystems.nb > 9.0, org.openide.util > 9.0, org.openide.util.lookup > 8.0, org.openide.nodes > 7.0, org.openide.loaders > 7.0, org.openide.awt > 7.0, org.openide.dialogs > 7.0, org.netbeans.modules.projectapi > 1.0, org.netbeans.modules.projectuiapi > 1.0, org.netbeans.modules.queries > 1.0, org.netbeans.modules.editor.indent.project/0 > 1.0
+OpenIDE-Module-Display-Category: ${moduleCategory}
+OpenIDE-Module-Localizing-Bundle: io/github/chris2011/netbeans/plugins/openfolder/Bundle.properties
+OpenIDE-Module-Layer: io/github/chris2011/netbeans/plugins/openfolder/layer.xml
+OpenIDE-Module-Requires: org.openide.modules.ModuleFormat1
+AutoUpdate-Show-In-Client: true
+AutoUpdate-Essential-Module: false
