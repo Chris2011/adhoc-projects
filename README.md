@@ -65,13 +65,13 @@ Right-click the project for standard operations like rename, move, delete, and p
 | Requirement    | Version      |
 |----------------|--------------|
 | Apache NetBeans | 11.0+       |
-| Java           | 11+          |
+| Java           | 17+          |
 
 ## Tech Stack
 
 - **Build System:** Gradle
 - **Platform:** NetBeans Module (NBM)
-- **Language:** Java 11
+- **Language:** Java 17
 
 ## Credits
 
